@@ -19,7 +19,9 @@ fi
 
 if [ "${1:-}" != "pull" ] && [ -n "$(git status --porcelain)" ]; then
   git add -A
-  git commit -q -m "sync: ${HOST} $(date '+%Y-%m-%d %H:%M')" || true
+  msg="sync: ${HOST} $(date '+%Y-%m-%d %H:%M')"
+  [ -n "${ONTHEGO_COMMIT_TRAILER:-}" ] && msg="$msg"$'\n\n'"$ONTHEGO_COMMIT_TRAILER"
+  git commit -q -m "$msg" || true
 fi
 
 retry git pull -q --rebase --autostash origin "$BRANCH" || {
