@@ -1,0 +1,21 @@
+# Geheimnisse – NIEMALS committen (Repo ist ggf. öffentlich!)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+.claude/settings.local.json
+
+# macOS / Editor
+.DS_Store
+.vscode/
+.idea/
+
+# Build / Abhängigkeiten
+node_modules/
+__pycache__/
+.venv/
+dist/
+build/
+*.log
