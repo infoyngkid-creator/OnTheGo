@@ -18,7 +18,11 @@ GitHub (`main`) ist die einzige Quelle der Wahrheit.
 - `auftraege/offen|in-arbeit|erledigt/` – Aufträge als Markdown (Vorlage: `scripts/neuer-auftrag.sh`)
 - `notizen/` – freie Notizen, Kontext, Wissen
 - `projekte/` – Arbeitsergebnisse/Code
-- `scripts/` – `sync.sh`, `neuer-auftrag.sh`, `mac-setup.sh`, `session-start.sh`
+- `scripts/` – `sync.sh`, `neuer-auftrag.sh`, `mac-setup.sh`, `session-start.sh`, `anruf.sh`
+
+## Anrufen (Bland AI)
+Bei Problemen/Rückfragen, wenn der Nutzer nicht im Chat antwortet: `scripts/anruf.sh "Anliegen"`, danach `scripts/anruf.sh --status <call_id>` für das Transkript.
+Key: `BLAND_API_KEY`, Nummer: `ONTHEGO_PHONE` – beide nur als Secret/`.env`, nie im Repo.
 
 ## Verbundene Dienste (über claude.ai-Konnektoren, lokal & Cloud gleich)
 Gmail, Google Drive, GitHub. Weitere (Slack, Notion, Linear, …) müssen unter claude.ai → Einstellungen → Konnektoren autorisiert werden.
