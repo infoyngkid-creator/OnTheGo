@@ -41,6 +41,7 @@ Hosting: GitHub Pages, Domain später.
 - 2026-11-04 GitHub Pages aktiv: https://infoyngkid-creator.github.io/joe-laredo-movies/ (geprüft, läuft)
 - 2026-11-04 3 Fotos eingebaut (About-Portrait, Smoke-Break-Poster, Kontakt-Hintergrund), Bio (EN), E-Mail joe.laredo@outlook.com, Alter automatisch ab Geburtstag 19.05.2005.
 - 2026-11-04 Film-Poster öffnet sich beim Scrollen wie ein Kofferraum (scroll-gesteuert). Instagram + TikTok @joelaredo_ verlinkt.
-- NÄCHSTER SCHRITT: Film-Details Smoke Break (Jahr, Länge, Rolle, Logline), weitere Filme, Domain.
+- 2026-11-04 Wunsch: echte Kofferraum-Szene aus Smoke Break (POV aus dem Kofferraum, Joe öffnet + raucht) als scroll-gesteuertes Intro (Frames per Scroll, dann Titel). YouTube-Download aus Cloud blockiert → Nutzer liefert Clip (Original-Export) per Drive oder lokal ins Repo assets/.
+- NÄCHSTER SCHRITT: Clip holen → ffmpeg Frames → Canvas-Scrub-Intro. Außerdem Film-Details Smoke Break (Jahr, Länge, Rolle, Logline), weitere Filme, Domain.
 
 ## Ergebnis
