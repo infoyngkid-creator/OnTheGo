@@ -2,7 +2,7 @@
 titel: Website Joe Laredo (EPK / Film-Portfolio)
 erstellt: 2026-11-04
 von: cloud
-status: offen   # wartet auf Antworten (siehe Offene Fragen)
+status: in-arbeit
 ort: egal   # egal | lokal | cloud
 ---
 
@@ -28,13 +28,15 @@ Hosting: GitHub Pages, Domain später.
 - Code: eigenes öffentliches Repo (z. B. joe-laredo-site), Nutzer legt es an
 
 ## Noch benötigt
-- [ ] Repo anlegen + Name nennen
+- [x] Repo: https://github.com/infoyngkid-creator/joe-laredo-movies
 - [ ] YouTube-Links + je Titel, Jahr, Länge, Rolle, 1 Satz; welcher ist das Aushängeschild
 - [ ] Foto (Drive-Link oder ins Repo)
 - [ ] Kontakt-E-Mail + Socials
 - [ ] Kurz-Bio (ein paar Stichpunkte reichen)
 
 ## Fortschritt
-- 2026-11-04 Plan erstellt, Fragen beantwortet, warte auf Repo + Film-Links.
+- 2026-11-04 Plan erstellt, Fragen beantwortet.
+- 2026-11-04 Prototyp gepusht (Repo joe-laredo-movies, main): Trunk-Shot-Intro (animiert), 4 Kapitel, Film-Player mit Countdown, Freeze-Frame-About, Services, Kontakt/Credits, Impressum-Platzhalter. Inhalte in content.js.
+- NÄCHSTER SCHRITT: Nutzer aktiviert GitHub Pages (Settings → Pages → main / root); Film-Links, Foto, Kontakt, Bio einpflegen.
 
 ## Ergebnis
