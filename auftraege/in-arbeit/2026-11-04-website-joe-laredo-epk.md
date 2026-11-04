@@ -43,6 +43,7 @@ Hosting: GitHub Pages, Domain später.
 - 2026-11-04 Film-Poster öffnet sich beim Scrollen wie ein Kofferraum (scroll-gesteuert). Instagram + TikTok @joelaredo_ verlinkt.
 - 2026-11-04 Wunsch: echte Kofferraum-Szene aus Smoke Break (POV aus dem Kofferraum, Joe öffnet + raucht) als scroll-gesteuertes Intro (Frames per Scroll, dann Titel). YouTube-Download aus Cloud blockiert → Nutzer liefert Clip (Original-Export) per Drive oder lokal ins Repo assets/.
 - 2026-11-04 Intro ersetzt: Kofferraum-Szene (18 s, vom Nutzer hochgeladen) als 275 WebP-Frames (15 fps, 2,6 MB) in assets/scene/, Canvas-Scroll-Scrub, Freeze-Frame bei Frame 100 mit Titel, Kofferraum schließt am Ende.
-- NÄCHSTER SCHRITT: Film-Details Smoke Break (Jahr, Länge, Rolle, Logline), weitere Filme, Domain.
+- 2026-11-04 Grindhouse-Vorspann (Countdown 5-4-3 → „Our Feature Presentation“ → „Rated J.L. – Just Legendary“ → Cigarette-Burn-Übergang), 1× pro Session, skipbar. Hover-Previews (Feld `preview` in content.js; Smoke Break: assets/previews/smoke-break.mp4). Weitere Ideen offen: Glut-Cursor mit Rauch, Sound-Design.
+- NÄCHSTER SCHRITT: neue YouTube-Projekte des Nutzers einbauen (+ je 3–5 s Preview-Clip); Film-Details Smoke Break (Jahr, Länge, Rolle, Logline), weitere Filme, Domain.
 
 ## Ergebnis
