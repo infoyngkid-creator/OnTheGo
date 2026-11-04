@@ -18,10 +18,23 @@ Hosting: GitHub Pages, Domain später.
   Chapter 3 „What I Do“ (Musikvideos, Kurzfilme, Content) → Chapter 4 „Press Kit“ (Download) → Kontakt/Booking.
 - **Phasen**: 1 Konzept+Assets · 2 Prototyp (Intro + 1 Film) live · 3 alle Filme + EPK · 4 Domain.
 
-## Offene Fragen
-siehe Chat 2026-11-04 (Name/Person, Filme, Zielgruppe, Sprache, Assets, Kontakt, Repo, Trunk-Shot real vs. animiert)
+## Entscheidungen (2026-11-04)
+- Joe Laredo = Künstlername des Nutzers → persönliches Filmemacher-Portfolio
+- Zielgruppe: Musiker & Künstler, Produktionsfirmen & Agenturen
+- Sprache: Englisch (Impressum/Kontakt-Pflichtangaben DE)
+- Trunk-Shot: erstmal animiert, echter Dreh evtl. später
+- Filme: 1–3, liegen auf YouTube
+- Material: Foto vorhanden; Logo entwerfen wir (70s-Schriftzug)
+- Code: eigenes öffentliches Repo (z. B. joe-laredo-site), Nutzer legt es an
+
+## Noch benötigt
+- [ ] Repo anlegen + Name nennen
+- [ ] YouTube-Links + je Titel, Jahr, Länge, Rolle, 1 Satz; welcher ist das Aushängeschild
+- [ ] Foto (Drive-Link oder ins Repo)
+- [ ] Kontakt-E-Mail + Socials
+- [ ] Kurz-Bio (ein paar Stichpunkte reichen)
 
 ## Fortschritt
-- 2026-11-04 Plan erstellt, warte auf Antworten.
+- 2026-11-04 Plan erstellt, Fragen beantwortet, warte auf Repo + Film-Links.
 
 ## Ergebnis
