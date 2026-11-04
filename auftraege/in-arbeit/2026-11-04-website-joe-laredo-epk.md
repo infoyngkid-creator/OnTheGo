@@ -39,6 +39,7 @@ Hosting: GitHub Pages, Domain später.
 - 2026-11-04 Prototyp gepusht (Repo joe-laredo-movies, main): Trunk-Shot-Intro (animiert), 4 Kapitel, Film-Player mit Countdown, Freeze-Frame-About, Services, Kontakt/Credits, Impressum-Platzhalter. Inhalte in content.js.
 - 2026-11-04 Smoke Break (YouTube CdCyzSpCz6s) als Hauptfilm, YouTube-Kanal @Joelaredo_m, Impressum-Adresse eingetragen. Thumbnail über Proxy nicht ladbar → Still vom Nutzer nötig.
 - 2026-11-04 GitHub Pages aktiv: https://infoyngkid-creator.github.io/joe-laredo-movies/ (geprüft, läuft)
-- NÄCHSTER SCHRITT: Film-Links, Foto, Kontakt, Bio einpflegen.
+- 2026-11-04 3 Fotos eingebaut (About-Portrait, Smoke-Break-Poster, Kontakt-Hintergrund), Bio (EN), E-Mail joe.laredo@outlook.com, Alter automatisch ab Geburtstag 19.05.2005.
+- NÄCHSTER SCHRITT: Film-Details Smoke Break (Jahr, Länge, Rolle, Logline), Instagram/TikTok, weitere Filme, Domain.
 
 ## Ergebnis
