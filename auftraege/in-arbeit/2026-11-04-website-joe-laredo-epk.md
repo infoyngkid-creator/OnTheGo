@@ -37,6 +37,7 @@ Hosting: GitHub Pages, Domain später.
 ## Fortschritt
 - 2026-11-04 Plan erstellt, Fragen beantwortet.
 - 2026-11-04 Prototyp gepusht (Repo joe-laredo-movies, main): Trunk-Shot-Intro (animiert), 4 Kapitel, Film-Player mit Countdown, Freeze-Frame-About, Services, Kontakt/Credits, Impressum-Platzhalter. Inhalte in content.js.
+- 2026-11-04 Smoke Break (YouTube CdCyzSpCz6s) als Hauptfilm, YouTube-Kanal @Joelaredo_m, Impressum-Adresse eingetragen. Thumbnail über Proxy nicht ladbar → Still vom Nutzer nötig.
 - NÄCHSTER SCHRITT: Nutzer aktiviert GitHub Pages (Settings → Pages → main / root); Film-Links, Foto, Kontakt, Bio einpflegen.
 
 ## Ergebnis
