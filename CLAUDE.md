@@ -12,12 +12,14 @@ GitHub (`main`) ist die einzige Quelle der Wahrheit.
 5. **Ende jeder Antwort**: Der Stop-Hook ruft `scripts/sync.sh` auf (commit + push auf `main`). Bei Konflikt: auflösen, nicht force-pushen.
 6. `ort: lokal` = braucht den Mac (lokale Apps/Dateien). Cloud-Session legt dann nur Notizen an und überlässt es der lokalen Session.
 7. **Keine Geheimnisse committen** (API-Keys, Passwörter, Tokens). Das Repo kann öffentlich sein. Keys gehören in `.env` (lokal) bzw. Environment-Variablen (Cloud).
-8. Größere Code-Projekte: als Unterordner unter `projekte/<name>/` oder als eigenes Repo; hier dann nur der Auftrag mit Link.
+8. **Toolkit**: Wiederverwendbare Tools liegen in `toolkit/` (Übersicht `toolkit/README.md`). Vor Nutzung das `BRIEFING.md` des Tools und `toolkit/FEHLER.md` lesen; neue Probleme dort eintragen.
+9. Größere Code-Projekte: als Unterordner unter `projekte/<name>/` oder als eigenes Repo; hier dann nur der Auftrag mit Link.
 
 ## Struktur
 - `auftraege/offen|in-arbeit|erledigt/` – Aufträge als Markdown (Vorlage: `scripts/neuer-auftrag.sh`)
 - `notizen/` – freie Notizen, Kontext, Wissen
 - `projekte/` – Arbeitsergebnisse/Code
+- `toolkit/` – globale Tools für alle Sessions (je Tool `BRIEFING.md`), Fehlerliste `toolkit/FEHLER.md`
 - `scripts/` – `sync.sh`, `neuer-auftrag.sh`, `mac-setup.sh`, `session-start.sh`, `anruf.sh`
 
 ## Anrufen (Bland AI)

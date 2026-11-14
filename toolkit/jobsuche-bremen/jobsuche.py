@@ -5,12 +5,13 @@ Jobsuche Bremen & umzu – ohne Browser/Chrome, läuft lokal und in der Cloud.
 Quellen:  StepStone (Suchergebnis + Detailseiten, strukturierte JSON-Daten)
           Arbeitnow (offene JSON-API)
 Filter:   Region Bremen (+ Umkreis), Samstagsarbeit wird erkannt und aussortiert
-Ausgabe:  ergebnisse/jobs_bremen_<datum>.xlsx  und  .csv  (mit Pro/Contra & Score)
+Ausgabe:  projekte/jobsuche-bremen/ergebnisse/jobs_bremen_<datum>.xlsx und .csv
+Briefing: toolkit/jobsuche-bremen/BRIEFING.md   Fehler: toolkit/FEHLER.md
 
 Aufruf:
-  python3 jobsuche.py                      # Standard-Suchbegriffe (Vertrieb & Co.)
-  python3 jobsuche.py -b "Vertrieb" "Kundenberater" --seiten 3 --radius 40
-  python3 jobsuche.py --schnell            # nur 1 Seite je Begriff, keine Detailseiten
+  python3 toolkit/jobsuche-bremen/jobsuche.py                      # Standard-Suchbegriffe (Vertrieb & Co.)
+  python3 toolkit/jobsuche-bremen/jobsuche.py -b "Vertrieb" "Kundenberater" --seiten 3 --radius 40
+  python3 toolkit/jobsuche-bremen/jobsuche.py --schnell            # nur 1 Seite je Begriff, keine Detailseiten
 """
 from __future__ import annotations
 
@@ -30,7 +31,27 @@ import requests
 
 UA = "OnTheGo-Jobsuche/1.0 (privates Bewerbungstool)"
 HDR = {"User-Agent": UA, "Accept-Language": "de-DE,de;q=0.9"}
-OUT = Path(__file__).resolve().parent / "ergebnisse"
+REPO = Path(__file__).resolve().parents[2]
+OUT = REPO / "projekte" / "jobsuche-bremen" / "ergebnisse"
+FEHLER = REPO / "toolkit" / "FEHLER.md"
+PROBLEME: list[str] = []
+
+
+def fehler_melden(text: str) -> None:
+    """Problem merken; am Ende landet es automatisch in toolkit/FEHLER.md."""
+    PROBLEME.append(text)
+    print(f"⚠️  {text}", flush=True)
+
+
+def fehler_schreiben() -> None:
+    if not PROBLEME or not FEHLER.exists():
+        return
+    stamp = dt.datetime.now().strftime("%Y-%m-%d %H:%M")
+    zeilen = "".join(f"| {stamp} | jobsuche-bremen | {p} | offen | automatisch gemeldet |\n" for p in PROBLEME)
+    s = FEHLER.read_text(encoding="utf-8")
+    marker = "<!-- AUTO-EINTRAEGE -->\n"
+    FEHLER.write_text(s.replace(marker, marker + zeilen, 1) if marker in s else s + zeilen, encoding="utf-8")
+    print(f"📝 {len(PROBLEME)} Problem(e) in {FEHLER} eingetragen.")
 
 STANDARD_BEGRIFFE = [
     "Vertrieb", "Vertriebsmitarbeiter", "Außendienst", "Vertriebsinnendienst",
@@ -99,8 +120,13 @@ def stepstone(begriff: str, radius: int, seiten: int) -> list[dict]:
         url = f"https://www.stepstone.de/jobs/{slug}/in-bremen?radius={radius}&page={page}"
         r = get(url)
         if not r:
+            if page == 1:
+                fehler_melden(f"StepStone nicht erreichbar/blockiert (Begriff '{begriff}')")
             break
-        items = _stepstone_state(r.text).get("searchResults", {}).get("items", [])
+        state = _stepstone_state(r.text)
+        if page == 1 and not state:
+            fehler_melden("StepStone: Datenblock app-unifiedResultlist nicht gefunden – Seitenstruktur geändert?")
+        items = state.get("searchResults", {}).get("items", [])
         if not items:
             break
         for it in items:
@@ -159,6 +185,8 @@ def arbeitnow(seiten: int = 5) -> list[dict]:
     for page in range(1, seiten + 1):
         r = get(f"https://www.arbeitnow.com/api/job-board-api?page={page}")
         if not r:
+            if page == 1:
+                fehler_melden("Arbeitnow-API nicht erreichbar")
             break
         data = r.json().get("data", [])
         if not data:
@@ -281,7 +309,7 @@ def export(jobs: list[dict], aussortiert: list[dict], stamp: str) -> tuple[Path,
     from openpyxl.styles import Alignment, Font, PatternFill
     from openpyxl.utils import get_column_letter
 
-    OUT.mkdir(exist_ok=True)
+    OUT.mkdir(parents=True, exist_ok=True)
     csv_p, xls_p = OUT / f"jobs_bremen_{stamp}.csv", OUT / f"jobs_bremen_{stamp}.xlsx"
 
     # CSV: Semikolon + UTF-8-BOM → öffnet sauber in deutschem Excel/Numbers
@@ -340,10 +368,14 @@ def main() -> None:
     ap.add_argument("--radius", type=int, default=30, help="Umkreis km um Bremen (Standard 30)")
     ap.add_argument("--seiten", type=int, default=2, help="Ergebnisseiten je Begriff (à 25)")
     ap.add_argument("--schnell", action="store_true", help="1 Seite, keine Detailseiten")
+    ap.add_argument("--out", type=Path, help="Ausgabeordner (Standard: projekte/jobsuche-bremen/ergebnisse)")
     ap.add_argument("--mit-samstag", action="store_true", help="Samstagsjobs nicht aussortieren")
     a = ap.parse_args()
     if a.schnell:
         a.seiten = 1
+    if a.out:
+        global OUT
+        OUT = a.out
 
     t0 = time.time()
     print(f"🔎 Suche {len(a.begriffe)} Begriffe, Radius {a.radius} km …", flush=True)
@@ -379,8 +411,13 @@ def main() -> None:
     ok.sort(key=lambda j: -j["score"])
     raus.sort(key=lambda j: -j["score"])
 
+    if not jobs:
+        fehler_melden("0 Stellen gefunden – alle Quellen leer")
+    if jobs and all(not j["text"].strip() for j in jobs):
+        fehler_melden("Kein Anzeigentext geladen – Samstags-Check/Pro/Contra wertlos")
     stamp = dt.date.today().isoformat()
     xls, csvp = export(ok, raus, stamp)
+    fehler_schreiben()
     print(f"✅ {len(ok)} Jobs ohne Samstag, {len(raus)} aussortiert  ({time.time() - t0:.0f}s)")
     print(f"   Excel: {xls}\n   CSV:   {csvp}")
 
