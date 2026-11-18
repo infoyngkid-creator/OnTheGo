@@ -57,7 +57,14 @@ STANDARD_BEGRIFFE = [
     "Vertrieb", "Vertriebsmitarbeiter", "Außendienst", "Vertriebsinnendienst",
     "Sales", "Kundenberater", "Key Account", "Quereinsteiger Vertrieb",
     "Account Manager", "Verkaufsberater", "Kundenservice", "Business Development",
+    # Einzel-/Großhandel (Großhandel & Fachhandel B2B sind oft Mo–Fr)
+    "Einzelhandel", "Verkäufer", "Kaufmann im Einzelhandel", "Verkaufsmitarbeiter",
+    "Großhandel", "Kaufmann Groß- und Außenhandel", "Fachberater", "Kassierer",
+    "Filialleitung", "Verkauf Innendienst",
 ]
+HANDEL = {"Einzelhandel", "Verkäufer", "Kaufmann im Einzelhandel", "Verkaufsmitarbeiter",
+          "Großhandel", "Kaufmann Groß- und Außenhandel", "Fachberater", "Kassierer",
+          "Filialleitung", "Verkauf Innendienst"}
 
 REGION = [
     "bremen", "bremerhaven", "delmenhorst", "oldenburg", "achim", "verden",
@@ -221,18 +228,40 @@ SAMSTAG_JA = re.compile(
     r"samstag|\bsa\.?\s*(?:von|ab|\d)|mo(?:ntag)?\.?\s*(?:-|–|bis)\s*sa(?:mstag)?\b|"
     r"wochenend(?:arbeit|dienst|einsä|schicht)|am wochenende|6[- ]tage[- ]woche|sechs[- ]tage|"
     r"schichtdienst|rollierend|verkaufsoffen", re.I)
+# Hinweise auf Laden/Filiale/Callcenter ohne klare Zeitangabe → meist auch samstags
+HANDEL_HINWEIS = re.compile(
+    r"einzelhandel|filiale|\bstore\b|im markt|verkaufsfläche|ladengeschäft|im laden\b|an der kasse|\bkasse\b|"
+    r"kassierer|öffnungszeiten|callcenter|call center|kundenkontaktcenter|möbelhaus|baumarkt|"
+    r"autohaus|supermarkt|drogerie|outlet|\bshop\b|geschäft in der innenstadt", re.I)
+# Ketten mit Ladenöffnung am Samstag → immer „prüfen“, auch wenn „Mo–Fr“ (z. B. Berufsschule) im Text steht
+LADENKETTEN = re.compile(
+    r"\b(bauhaus|obi|hornbach|toom|hagebau|globus|rewe|edeka|lidl|aldi|penny|netto|kaufland|famila|"
+    r"combi|rossmann|\bdm\b|müller|ikea|media ?markt|saturn|h&m|primark|decathlon|deichmann|tedi|"
+    r"action|poco|roller|xxxlutz|porta|dänisches bettenlager|jysk|fressnapf|thalia|douglas|"
+    r"intersport|zara|c&a|tk maxx|kik|woolworth|depot|apollo|fielmann|vorwerk store|telekom shop|"
+    r"vodafone shop|o2 shop|expert|euronics|karstadt|galeria)\b", re.I)
+RELEVANT = re.compile(
+    r"vertrieb|verkauf|verkäuf|sales|kunde|berat|account|handel|kauf(frau|mann|leute)|filial|kass|"
+    r"innendienst|außendienst|aussendienst|service|business|key|gebiet|store|shop|markt|einzelhand|"
+    r"großhand|telefon|akquise|vermittl|disponent|disposition|repräsent|agent|promoter", re.I)
 MO_FR = re.compile(r"mo(?:ntag|\.)?\s*(?:-|–|bis)\s*fr(?:eitag|\.)?|5[- ]tage[- ]woche|fünf[- ]tage", re.I)
 
 
-def samstag(text: str) -> str:
+def samstag(text: str, kopf: str = "") -> str:
     if FREI.search(text):
         return "nein (Wochenende frei)"
+    kette = LADENKETTEN.search(kopf)
+    if kette and not SAMSTAG_JA.search(text):
+        return f"prüfen – Ladenkette „{kette.group(0)}“, meist auch samstags"
     ja = SAMSTAG_JA.search(text)
     if ja:
         ctx = text[max(0, ja.start() - 60): ja.end() + 60].replace("\n", " ").strip()
         return f"ja/möglich: „…{ctx}…“"
     if MO_FR.search(text):
         return "nein (Mo–Fr)"
+    h = HANDEL_HINWEIS.search(text)
+    if h:
+        return f"prüfen – Laden/Filiale/Callcenter („{h.group(0)}“), oft auch samstags"
     return "nicht erwähnt (Büro/Außendienst → meist Mo–Fr)"
 
 
@@ -282,10 +311,15 @@ def bewerten(job: dict) -> None:
         pros.append("In Bremen")
     elif not any(r in ort for r in REGION):
         cons.append("Ort außerhalb Kernregion")
-    job["samstag"] = samstag(job["text"])
+    job["samstag"] = samstag(f"{job['titel']} {job['firma']} {job['text']}", f"{job['titel']} {job['firma']}")
+    if re.search(r"\bausbildung|azubi|duales studium|werkstudent|praktik", job["titel"], re.I):
+        cons.append("Ausbildung/Studentenjob")
+    job["kategorie"] = ("Handel" if job["suchbegriff"].split(", ")[0] in HANDEL
+                        else "Kundenservice" if "kundenservice" in job["suchbegriff"].lower() else "Vertrieb")
     score = 40 + 4 * len(pros) - 8 * len(cons)
     score += 10 if "Festgehalt" in pros and "Provision/Bonus" in pros else 0
-    score += 5 if job["samstag"].startswith("nein") else 0
+    score += 8 if job["samstag"].startswith("nein") else 0
+    score -= 15 if job["samstag"].startswith("prüfen") else 0
     score -= 20 if "Selbstständig/Provision ohne Fix" in cons else 0
     job["pro"] = " · ".join(pros) or "–"
     job["contra"] = " · ".join(cons) or "–"
@@ -296,7 +330,7 @@ def bewerten(job: dict) -> None:
 # Export
 # --------------------------------------------------------------------------- #
 SPALTEN = [
-    ("score", "Score", 8), ("titel", "Stelle", 48), ("firma", "Firma", 30), ("ort", "Ort", 24),
+    ("score", "Score", 8), ("kategorie", "Bereich", 12), ("titel", "Stelle", 48), ("firma", "Firma", 30), ("ort", "Ort", 24),
     ("gehalt", "Gehalt", 26), ("samstag", "Samstagsarbeit?", 30), ("pro", "Pro", 55),
     ("contra", "Contra", 45), ("homeoffice", "Homeoffice", 11), ("anstellung", "Anstellung", 14),
     ("datum", "Online seit", 11), ("bewerben_bis", "Läuft bis", 11), ("quelle", "Quelle", 10),
@@ -333,6 +367,11 @@ def export(jobs: list[dict], aussortiert: list[dict], stamp: str) -> tuple[Path,
             link = ws.cell(r, len(SPALTEN) - 1)
             if link.value:
                 link.hyperlink, link.style = link.value, "Hyperlink"
+            sa = ws.cell(r, 7)
+            if str(sa.value).startswith("prüfen"):
+                sa.fill = PatternFill("solid", fgColor="FFD966")
+            elif str(sa.value).startswith("nein"):
+                sa.fill = PatternFill("solid", fgColor="C6EFCE")
             sc = ws.cell(r, 1)
             sc.fill = PatternFill("solid", fgColor="C6EFCE" if j["score"] >= 70 else "FFEB9C" if j["score"] >= 50 else "FFC7CE")
         for i, (_, _, wdt) in enumerate(SPALTEN, 1):
@@ -351,8 +390,8 @@ def export(jobs: list[dict], aussortiert: list[dict], stamp: str) -> tuple[Path,
     for row in [
         ["Erstellt", dt.datetime.now().strftime("%d.%m.%Y %H:%M")],
         ["Treffer (ohne Samstag)", len(jobs)], ["Aussortiert wegen Samstag", len(aussortiert)],
-        ["Score", "40 Basis, +4 je Pro, −8 je Contra, +10 Fix+Provision, +5 Mo–Fr bestätigt, −20 reine Provision"],
-        ["Samstag-Check", "Automatisch aus dem Anzeigentext – vor der Bewerbung bitte gegenprüfen."],
+        ["Score", "40 Basis, +4 je Pro, −8 je Contra, +10 Fix+Provision, +8 Mo–Fr bestätigt, −15 Samstag prüfen (Laden/Filiale), −20 reine Provision"],
+        ["Samstag-Check", "grün = Mo–Fr/Wochenende frei bestätigt · gelb = prüfen (Laden/Filiale/Callcenter) · ohne Farbe = nicht erwähnt. Samstag ausdrücklich genannt → Blatt „Aussortiert“."],
         ["Gehalt", "„geschätzt“ = StepStone-Schätzung, nicht Angabe des Arbeitgebers."],
     ]:
         info.append(row)
@@ -400,6 +439,9 @@ def main() -> None:
         with ThreadPoolExecutor(8) as ex:
             list(ex.map(stepstone_detail, [j for j in jobs if j["quelle"] == "StepStone"]))
 
+    vorher = len(jobs)
+    jobs = [j for j in jobs if RELEVANT.search(j["titel"])]
+    print(f"   {vorher - len(jobs)} fachfremde Stellen (Titel ohne Vertrieb/Verkauf/Handel/Kunde …) entfernt", flush=True)
     for j in jobs:
         j.setdefault("anstellung", "")
         j.setdefault("bewerben_bis", "")

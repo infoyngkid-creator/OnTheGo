@@ -21,6 +21,11 @@ Neue Einträge **oben** in die Tabelle. Das Jobsuche-Tool trägt Probleme automa
 | Datum | Tool | Problem | Status | Lösung / Workaround |
 |---|---|---|---|---|
 <!-- AUTO-EINTRAEGE -->
+| 2026-11-18 | jobsuche-bremen | Spalte „Bereich“ nach erstem Suchbegriff – z. B. Ströer-Außendienst steht unter „Handel“ | offen | Beim Filtern nicht nur auf „Bereich“ verlassen |
+| 2026-11-18 | jobsuche-bremen | „Filiale“ markiert auch Bank-Filialen (Sparkasse) als „prüfen“, obwohl meist Mo–Fr | bekannt/hinnehmen | Anzeige ansehen |
+| 2026-11-18 | jobsuche-bremen | Ladenketten (BAUHAUS, Vorwerk Store) rutschten durch, weil „Mo–Fr“ (Berufsschule) im Text stand | behoben | `LADENKETTEN` → immer „prüfen“ |
+| 2026-11-18 | jobsuche-bremen | Handels-Suchbegriffe liefern viele fachfremde Jobs (Zimmerer, SAP-Berater) | behoben | Relevanzfilter `RELEVANT` auf Titel |
+| 2026-11-18 | jobsuche-bremen | „laden“ (z. B. „wir laden dich ein“), „Krankenkasse“ und „Workshop“ wurden als Laden/Kasse/Shop erkannt | behoben | Regex mit Wortgrenzen/„im Laden“ |
 | 2026-11-14 | jobsuche-bremen | Dubletten, wenn eine Firma dieselbe Stelle unter leicht anderem Titel ausschreibt (z. B. DeterTech) | offen | In Excel nach Firma sortieren; Fix: Dubletten-Schlüssel unschärfer machen |
 | 2026-11-14 | jobsuche-bremen | Samstag „nicht erwähnt“ bei ~270 von 280 Stellen – nicht sicher Mo–Fr | bekannt/hinnehmen | Vor Bewerbung Anzeige prüfen |
 | 2026-11-14 | jobsuche-bremen | Arbeitnow liefert kaum Bremen-Treffer (1 Stelle) | bekannt/hinnehmen | Weitere Quelle ergänzen (z. B. jobs.weser-kurier.de) |
