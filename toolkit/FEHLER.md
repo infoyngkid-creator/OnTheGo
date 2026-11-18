@@ -21,6 +21,9 @@ Neue Einträge **oben** in die Tabelle. Das Jobsuche-Tool trägt Probleme automa
 | Datum | Tool | Problem | Status | Lösung / Workaround |
 |---|---|---|---|---|
 <!-- AUTO-EINTRAEGE -->
+| 2026-11-18 | jobsuche-bremen | HUMANIC-Job im Weserpark steht doppelt (Firma direkt + über meinestadt.de) | bekannt/hinnehmen | – |
+| 2026-11-18 | jobsuche-bremen | „selbständig arbeiten“ wurde als „Selbstständig/Provision ohne Fix“ gewertet (18 Fälle bleiben, prüfen) | behoben | Regex auf „auf selbstständiger Basis“, „Handelsvertreter“ usw. eingeschränkt |
+| 2026-11-18 | jobsuche-bremen | Teilzeit wurde als Contra gewertet, Nutzer will aber ~30 Std. | behoben | Teilzeit = Pro, nur Minijob/Aushilfe = Contra |
 | 2026-11-18 | jobsuche-bremen | Spalte „Bereich“ nach erstem Suchbegriff – z. B. Ströer-Außendienst steht unter „Handel“ | offen | Beim Filtern nicht nur auf „Bereich“ verlassen |
 | 2026-11-18 | jobsuche-bremen | „Filiale“ markiert auch Bank-Filialen (Sparkasse) als „prüfen“, obwohl meist Mo–Fr | bekannt/hinnehmen | Anzeige ansehen |
 | 2026-11-18 | jobsuche-bremen | Ladenketten (BAUHAUS, Vorwerk Store) rutschten durch, weil „Mo–Fr“ (Berufsschule) im Text stand | behoben | `LADENKETTEN` → immer „prüfen“ |

@@ -187,6 +187,51 @@ def stepstone_detail(job: dict) -> None:
 # --------------------------------------------------------------------------- #
 # Quelle 2: Arbeitnow (offene API, v. a. internationale Firmen)
 # --------------------------------------------------------------------------- #
+# --------------------------------------------------------------------------- #
+# Quelle 3: Weserpark (Einkaufszentrum Bremen-Osterholz, eigene Jobbörse)
+# Samstag ist dort normal → Jobs werden NICHT aussortiert, sondern eigenes Blatt
+# („5 Tage / 30 Std. verhandeln“).
+# --------------------------------------------------------------------------- #
+WESERPARK = re.compile(r"weser ?-?park|hans-bredow-str", re.I)
+
+
+def _weserpark_detail(job: dict) -> None:
+    r = get(job["link"])
+    if not r:
+        return
+    m = re.search(r"<main.*?</main>", r.text, re.S)
+    t = re.sub(r"<script.*?</script>|<style.*?</style>", "", m.group(0) if m else r.text, flags=re.S)
+    job["text"] = clean(t) or job["text"]
+
+
+def weserpark() -> list[dict]:
+    base = "https://www.weserpark.de"
+    r = get(base + "/aktuelles/jobs")
+    if not r:
+        fehler_melden("Weserpark-Jobseite nicht erreichbar (weserpark.de/aktuelles/jobs)")
+        return []
+    jobs = []
+    for card in r.text.split("Partials/List/Item.html")[1:]:
+        link = re.search(r'href="(/aktuelles/jobs/[^"]+)"', card)
+        titel = re.search(r'itemprop="headline">(.*?)</h3>', card, re.S)
+        if not (link and titel):
+            continue
+        firma = re.search(r'news-list-tags"[^>]*><span[^>]*>(.*?)</span>', card, re.S)
+        teaser = re.search(r'itemprop="description">(.*?)</div>', card, re.S)
+        jobs.append({
+            "quelle": "Weserpark", "id": "wp-" + link.group(1).rsplit("-", 1)[-1],
+            "titel": clean(titel.group(1)), "firma": clean(firma.group(1)) if firma else "",
+            "ort": "Bremen, Weserpark", "gehalt": "", "homeoffice": "", "datum": "",
+            "link": base + link.group(1), "text": clean(teaser.group(1)) if teaser else "",
+            "suchbegriff": "Weserpark",
+        })
+    if not jobs:
+        fehler_melden("Weserpark: keine Job-Karten gefunden – Seitenstruktur geändert?")
+    with ThreadPoolExecutor(6) as ex:
+        list(ex.map(_weserpark_detail, jobs))
+    return jobs
+
+
 def arbeitnow(seiten: int = 5) -> list[dict]:
     jobs = []
     for page in range(1, seiten + 1):
@@ -278,17 +323,18 @@ PRO = [
     (r"jobrad|e-?bike|fahrrad-?leasing", "JobRad"),
     (r"deutschlandticket|jobticket|deutschland-?ticket", "Jobticket"),
     (r"gleitzeit|flexible arbeitszeit", "Flexible Arbeitszeit"),
+    (r"teilzeit|\b(25|30|32|35) ?(std|stunden|h)\b", "Teilzeit möglich (z. B. 30 Std.)"),
     (r"weihnachtsgeld|urlaubsgeld|13\.? (monats)?gehalt", "Urlaubs-/Weihnachtsgeld"),
 ]
 CONTRA = [
     (r"reisebereitschaft|reisetätigkeit|übernachtung|bundesweit", "Reisetätigkeit"),
     (r"mehrjährige|(\d|drei|fünf)\+? jahre .{0,30}erfahrung|einschlägige erfahrung|nachweisbare erfolge", "Erfahrung gefordert"),
     (r"(?<!un)befristet", "Befristet"),
-    (r"selbstständig|selbständig|handelsvertreter|§ ?84|freie[rn]? mitarbeit|reine provision|provisionsbasis", "Selbstständig/Provision ohne Fix"),
+    (r"auf selbstst?ändiger basis|selbstst?ändige[rn]? (handelsvertreter|tätigkeit|vertriebspartner|unternehmer)|als selbstst?ändige|freiberuflich|handelsvertreter|§ ?84|freie[rn]? mitarbeit|reine provision|provisionsbasis|ohne fixum", "Selbstständig/Provision ohne Fix"),
     (r"zeitarbeit|personaldienstleist|arbeitnehmerüberlassung|im auftrag unseres kunden", "Zeitarbeit/Vermittler"),
     (r"schicht", "Schichtarbeit"),
     (r"kaltakquise|telefonakquise|door[- ]to[- ]door|haustür", "Kaltakquise/Haustür"),
-    (r"teilzeit|minijob|520|538|603 ?€", "Teilzeit/Minijob"),
+    (r"minijob|midijob|aushilf|geringfügig|520 ?€|538 ?€|556 ?€|603 ?€", "Minijob/Aushilfe"),
     (r"verhandlungssicher(es)? englisch|fließend(es)? englisch|business english", "Englisch verhandlungssicher"),
     (r"studium|hochschulabschluss|bachelor|master", "Studium gewünscht"),
 ]
@@ -314,12 +360,15 @@ def bewerten(job: dict) -> None:
     job["samstag"] = samstag(f"{job['titel']} {job['firma']} {job['text']}", f"{job['titel']} {job['firma']}")
     if re.search(r"\bausbildung|azubi|duales studium|werkstudent|praktik", job["titel"], re.I):
         cons.append("Ausbildung/Studentenjob")
-    job["kategorie"] = ("Handel" if job["suchbegriff"].split(", ")[0] in HANDEL
+    job["weserpark"] = job["quelle"] == "Weserpark" or bool(WESERPARK.search(f"{job['ort']} {job['titel']} {job['text']}"))
+    if job["weserpark"]:
+        pros.append("Weserpark – 5 Tage/30 Std. verhandeln")
+    job["kategorie"] = "Weserpark" if job["weserpark"] else ("Handel" if job["suchbegriff"].split(", ")[0] in HANDEL
                         else "Kundenservice" if "kundenservice" in job["suchbegriff"].lower() else "Vertrieb")
     score = 40 + 4 * len(pros) - 8 * len(cons)
     score += 10 if "Festgehalt" in pros and "Provision/Bonus" in pros else 0
     score += 8 if job["samstag"].startswith("nein") else 0
-    score -= 15 if job["samstag"].startswith("prüfen") else 0
+    score -= 15 if job["samstag"].startswith("prüfen") and not job["weserpark"] else 0
     score -= 20 if "Selbstständig/Provision ohne Fix" in cons else 0
     job["pro"] = " · ".join(pros) or "–"
     job["contra"] = " · ".join(cons) or "–"
@@ -338,7 +387,8 @@ SPALTEN = [
 ]
 
 
-def export(jobs: list[dict], aussortiert: list[dict], stamp: str) -> tuple[Path, Path]:
+def export(jobs: list[dict], aussortiert: list[dict], stamp: str, wp: list[dict] | None = None) -> tuple[Path, Path]:
+    wp = wp or []
     from openpyxl import Workbook
     from openpyxl.styles import Alignment, Font, PatternFill
     from openpyxl.utils import get_column_letter
@@ -350,7 +400,7 @@ def export(jobs: list[dict], aussortiert: list[dict], stamp: str) -> tuple[Path,
     with csv_p.open("w", newline="", encoding="utf-8-sig") as f:
         w = csv.writer(f, delimiter=";")
         w.writerow([h for _, h, _ in SPALTEN])
-        for j in jobs:
+        for j in jobs + wp:
             w.writerow([j.get(k, "") for k, _, _ in SPALTEN])
 
     wb = Workbook()
@@ -385,11 +435,13 @@ def export(jobs: list[dict], aussortiert: list[dict], stamp: str) -> tuple[Path,
     ws = wb.active
     ws.title = "Jobs ohne Samstag"
     sheet(ws, jobs)
+    sheet(wb.create_sheet("Weserpark"), wp)
     sheet(wb.create_sheet("Aussortiert (Samstag)"), aussortiert)
     info = wb.create_sheet("Info")
     for row in [
         ["Erstellt", dt.datetime.now().strftime("%d.%m.%Y %H:%M")],
         ["Treffer (ohne Samstag)", len(jobs)], ["Aussortiert wegen Samstag", len(aussortiert)],
+        ["Weserpark", f"{len(wp)} Stellen – Samstag dort üblich, aber bewusst drin: bei der Bewerbung 5 Tage/Woche, 30 Std. ohne Samstag verhandeln."],
         ["Score", "40 Basis, +4 je Pro, −8 je Contra, +10 Fix+Provision, +8 Mo–Fr bestätigt, −15 Samstag prüfen (Laden/Filiale), −20 reine Provision"],
         ["Samstag-Check", "grün = Mo–Fr/Wochenende frei bestätigt · gelb = prüfen (Laden/Filiale/Callcenter) · ohne Farbe = nicht erwähnt. Samstag ausdrücklich genannt → Blatt „Aussortiert“."],
         ["Gehalt", "„geschätzt“ = StepStone-Schätzung, nicht Angabe des Arbeitgebers."],
@@ -420,8 +472,10 @@ def main() -> None:
     print(f"🔎 Suche {len(a.begriffe)} Begriffe, Radius {a.radius} km …", flush=True)
     with ThreadPoolExecutor(4) as ex:
         res = list(ex.map(lambda b: stepstone(b, a.radius, a.seiten), a.begriffe))
+        res.append(stepstone("weser-park", 10, 2))  # StepStone-Anzeigen mit Weserpark-Bezug
         an = ex.submit(arbeitnow)
-        alle = [j for r in res for j in r] + an.result()
+        wpf = ex.submit(weserpark)
+        alle = [j for r in res for j in r] + an.result() + wpf.result()
 
     uniq: dict[str, dict] = {}
     for j in alle:
@@ -440,7 +494,7 @@ def main() -> None:
             list(ex.map(stepstone_detail, [j for j in jobs if j["quelle"] == "StepStone"]))
 
     vorher = len(jobs)
-    jobs = [j for j in jobs if RELEVANT.search(j["titel"])]
+    jobs = [j for j in jobs if j["quelle"] == "Weserpark" or RELEVANT.search(j["titel"])]
     print(f"   {vorher - len(jobs)} fachfremde Stellen (Titel ohne Vertrieb/Verkauf/Handel/Kunde …) entfernt", flush=True)
     for j in jobs:
         j.setdefault("anstellung", "")
@@ -448,8 +502,10 @@ def main() -> None:
         j["status"] = ""
         bewerten(j)
 
-    ok = [j for j in jobs if a.mit_samstag or not j["samstag"].startswith("ja")]
-    raus = [j for j in jobs if j not in ok]
+    wp = sorted([j for j in jobs if j["weserpark"]], key=lambda j: -j["score"])
+    rest = [j for j in jobs if not j["weserpark"]]
+    ok = [j for j in rest if a.mit_samstag or not j["samstag"].startswith("ja")]
+    raus = [j for j in rest if j not in ok]
     ok.sort(key=lambda j: -j["score"])
     raus.sort(key=lambda j: -j["score"])
 
@@ -458,9 +514,9 @@ def main() -> None:
     if jobs and all(not j["text"].strip() for j in jobs):
         fehler_melden("Kein Anzeigentext geladen – Samstags-Check/Pro/Contra wertlos")
     stamp = dt.date.today().isoformat()
-    xls, csvp = export(ok, raus, stamp)
+    xls, csvp = export(ok, raus, stamp, wp)
     fehler_schreiben()
-    print(f"✅ {len(ok)} Jobs ohne Samstag, {len(raus)} aussortiert  ({time.time() - t0:.0f}s)")
+    print(f"✅ {len(ok)} Jobs ohne Samstag, {len(wp)} Weserpark, {len(raus)} aussortiert  ({time.time() - t0:.0f}s)")
     print(f"   Excel: {xls}\n   CSV:   {csvp}")
 
 

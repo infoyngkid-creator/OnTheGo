@@ -10,6 +10,8 @@ Läuft **ohne Chrome/Browser** – nur HTTP-Anfragen. Funktioniert in der Cloud,
   (Delmenhorst, Oldenburg, Achim, Verden, Osterholz, Stuhr, Weyhe, Lilienthal, Bremerhaven).
 - **Samstags arbeiten kommt nicht in Frage.** Einzelhandel/Großhandel ist auch ok (seit 2026-11-18), aber nur Jobs von Montag bis Freitag.
 - Lieber mehr Optionen als zu wenige.
+- **Weserpark** (Einkaufszentrum Bremen-Osterholz) ausdrücklich gewünscht (seit 2026-11-18): Dort ist Samstag üblich, der Nutzer will aber bei der Bewerbung **5 Tage/Woche, 30 Std. ohne Samstag** verhandeln → Weserpark-Jobs werden nie aussortiert, sondern landen im eigenen Blatt „Weserpark“.
+- Teilzeit (~30 Std.) ist okay → „Teilzeit möglich“ ist ein Pro; Minijob/Aushilfe bleibt Contra.
 - Zugehöriger Auftrag: `auftraege/in-arbeit/2026-10-23-bewerbung-vertrieb-bremen.md`, Bewerbungsordner: `projekte/bewerbung/`.
 
 ## Aufruf (vom Repo-Root)
@@ -29,7 +31,7 @@ Kaufmann Groß- und Außenhandel, Fachberater, Kassierer, Filialleitung, Verkauf
 
 ## Ausgabe
 `projekte/jobsuche-bremen/ergebnisse/jobs_bremen_<JJJJ-MM-TT>.xlsx` und `.csv`
-- Excel-Blätter: **Jobs ohne Samstag** (nach Score sortiert, farbig), **Aussortiert (Samstag)** (mit Textstelle als Begründung), **Info**.
+- Excel-Blätter: **Jobs ohne Samstag** (nach Score sortiert, farbig), **Weserpark**, **Aussortiert (Samstag)** (mit Textstelle als Begründung), **Info**.
 - CSV: Semikolon, UTF-8 mit BOM → öffnet direkt korrekt in deutschem Excel/Numbers.
 - Spalten: Score, Stelle, Firma, Ort, Gehalt, Samstagsarbeit?, Pro, Contra, Homeoffice, Anstellung, Online seit, Läuft bis, Quelle, Suchbegriff, Link, Mein Status.
 - Nach dem Lauf: Dateien dem Nutzer schicken (SendUserFile) und `scripts/sync.sh` bzw. committen + pushen.
@@ -39,6 +41,7 @@ Kaufmann Groß- und Außenhandel, Fachberater, Kassierer, Filialleitung, Verkauf
 |---|---|---|
 | StepStone-Suche | `stepstone()` | liest JSON aus `window.__PRELOADED_STATE__["app-unifiedResultlist"]` der Suchseite `stepstone.de/jobs/<begriff>/in-bremen?radius=&page=` |
 | StepStone-Volltext | `stepstone_detail()` | JSON-LD `JobPosting` der Detailseite (description, employmentType, validThrough) |
+| Weserpark | `weserpark()`, `WESERPARK` | Jobbörse `weserpark.de/aktuelles/jobs` (Karten getrennt durch `Partials/List/Item.html`) + StepStone-Suche „weser-park“; alles mit Weserpark-Bezug → Blatt „Weserpark“, kein Samstags-Abzug |
 | Arbeitnow | `arbeitnow()` | offene API, filtert auf Orte aus `REGION`; liefert nur wenige Treffer |
 | Samstags-Check | `samstag()` + Regex `FREI`, `SAMSTAG_JA`, `MO_FR` | Reihenfolge: „Wochenende frei“ → nein; „Samstag/am Wochenende/Schicht…“ → ja (aussortiert); „Mo–Fr“ → nein; sonst „nicht erwähnt“ |
 | Samstag „prüfen“ | `HANDEL_HINWEIS`, `LADENKETTEN` | Laden/Filiale/Store/Callcenter oder bekannte Ladenkette (BAUHAUS, ALDI, Action …) ohne klare Zeitangabe → gelb markiert, −15 Score, bleibt in der Liste |
