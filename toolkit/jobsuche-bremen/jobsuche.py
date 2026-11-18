@@ -104,6 +104,89 @@ def clean(t: str | None) -> str:
 
 
 # --------------------------------------------------------------------------- #
+# Fahrt ab Mahndorf (Wohnort): Straßen-km und Minuten mit dem Auto, grob geschätzt
+# (A1/A27/Hansalinie berücksichtigt). Keine externe Abfrage – Tabelle hier pflegen.
+# --------------------------------------------------------------------------- #
+MAX_MINUTEN = 30            # alles darüber → Blatt „Zu weit“
+SPRIT_L_100KM = 6.5         # Verbrauch
+SPRIT_EUR_L = 1.75          # Preis pro Liter
+ARBEITSTAGE = 21            # pro Monat (5-Tage-Woche)
+
+# Ort/Stadtteil → (km, Minuten) ab Bremen-Mahndorf
+ORTE = {
+    "mahndorf": (0, 0), "hansalinie": (3, 6), "uphusen": (3, 5), "arbergen": (4, 8), "weserpark": (4, 7),
+    "weser-park": (4, 7), "osterholz": (5, 9), "tenever": (6, 10), "hemelingen": (6, 11), "sebaldsbrück": (6, 10),
+    "bierden": (6, 9), "vahr": (9, 14), "achim": (8, 12), "oyten": (9, 12), "embsen": (9, 12),
+    "baden": (13, 16), "uesen": (12, 15), "oberneuland": (10, 15), "horn": (11, 17), "borgfeld": (14, 20),
+    "habenhausen": (9, 14), "obervieland": (11, 15), "arsten": (11, 15), "kattenturm": (12, 16), "flughafen": (13, 17),
+    "airport": (13, 17), "neustadt": (14, 21), "östliche vorstadt": (11, 18), "schwachhausen": (12, 19),
+    "bremen": (13, 20), "mitte": (13, 20), "überseestadt": (17, 25), "findorff": (14, 22), "walle": (17, 25),
+    "woltmershausen": (17, 24), "gröpelingen": (20, 27), "huchting": (19, 25), "lilienthal": (16, 22),
+    "fischerhude": (16, 20), "ottersberg": (19, 20), "posthausen": (18, 18), "sottrum": (27, 24),
+    "langwedel": (21, 22), "etelsen": (17, 19), "thedinghausen": (21, 25), "verden": (28, 25), "kirchlinteln": (33, 30),
+    "weyhe": (16, 18), "leeste": (16, 19), "kirchweyhe": (17, 20), "dreye": (13, 17), "brinkum": (15, 18),
+    "stuhr": (19, 22), "moordeich": (19, 22), "syke": (26, 27), "barrien": (24, 26), "grasberg": (22, 28),
+    "worpswede": (26, 33), "ritterhude": (28, 31), "burglesum": (29, 30), "burg-grambke": (25, 28), "vegesack": (33, 33),
+    "blumenthal": (38, 38), "farge": (41, 42), "delmenhorst": (30, 30), "ganderkesee": (40, 37),
+    "osterholz-scharmbeck": (33, 34), "bassum": (38, 38), "hoya": (40, 40), "dörverden": (37, 35), "rotenburg": (40, 35),
+    "zeven": (50, 45), "schwanewede": (40, 40), "wildeshausen": (47, 40), "oldenburg": (58, 45), "hude": (48, 42),
+    "bremerhaven": (72, 55), "cuxhaven": (115, 85), "hamburg": (110, 80), "hannover": (120, 85), "diepholz": (62, 50),
+    "nienburg": (60, 55),
+}
+ORTE["sieke"] = ORTE["syke"]          # häufige Schreibweise
+ORTE["euthen"] = ORTE["oyten"]
+BREMER_TEILE = {k for k in ORTE if k not in {"bremen", "mitte"}} & {
+    "mahndorf", "hansalinie", "arbergen", "weserpark", "weser-park", "osterholz", "tenever", "hemelingen", "sebaldsbrück",
+    "vahr", "oberneuland", "horn", "borgfeld", "habenhausen", "obervieland", "arsten", "kattenturm", "flughafen", "airport",
+    "neustadt", "östliche vorstadt", "schwachhausen", "überseestadt", "findorff", "walle", "woltmershausen", "gröpelingen",
+    "huchting", "burglesum", "burg-grambke", "vegesack", "blumenthal", "farge"}
+# PLZ-Präfix → Ort (genauer als „Bremen“)
+PLZ = {
+    "28307": "mahndorf", "28309": "hemelingen", "28325": "osterholz", "28327": "osterholz", "28329": "vahr",
+    "28832": "achim", "28876": "oyten", "28870": "ottersberg", "28844": "weyhe", "28816": "stuhr", "28857": "syke",
+    "27283": "verden", "28865": "lilienthal", "28879": "grasberg", "27726": "worpswede", "27721": "ritterhude",
+    "27711": "osterholz-scharmbeck", "28355": "oberneuland", "28357": "horn", "28359": "horn", "28277": "obervieland",
+    "28279": "obervieland", "28199": "neustadt", "28197": "neustadt", "28201": "neustadt", "28203": "östliche vorstadt",
+    "28205": "östliche vorstadt", "28209": "schwachhausen", "28211": "schwachhausen", "28213": "schwachhausen",
+    "28215": "findorff", "28217": "überseestadt", "28219": "walle", "28237": "gröpelingen", "28239": "gröpelingen",
+    "28259": "huchting", "28195": "mitte", "28717": "burglesum", "28719": "burg-grambke", "28755": "vegesack",
+    "28757": "vegesack", "28759": "vegesack", "28777": "blumenthal", "28779": "blumenthal", "27749": "delmenhorst",
+    "27751": "delmenhorst", "27753": "delmenhorst", "27755": "delmenhorst", "27777": "ganderkesee", "26121": "oldenburg",
+    "26122": "oldenburg", "26123": "oldenburg", "26125": "oldenburg", "26127": "oldenburg", "26129": "oldenburg",
+    "26131": "oldenburg", "26133": "oldenburg", "26135": "oldenburg", "28199": "neustadt", "28197": "neustadt",
+    "27299": "langwedel", "27308": "kirchlinteln", "27330": "thedinghausen", "27367": "sottrum", "27356": "rotenburg",
+    "28211": "schwachhausen", "28239": "gröpelingen",
+}
+REGIONAL = re.compile(r"norddeutschland|niedersachsen|nordwest|region|gebiet|bundesweit|deutschlandweit|"
+                      r"home-?office|remote|schleswig|plz", re.I)
+
+
+def fahrt(ort: str, plz: str = "", text: str = "") -> tuple[int | None, str]:
+    """→ (Minuten oder None, Beschreibung) für den nächstgelegenen genannten Arbeitsort."""
+    o = ort.lower()
+    kandidaten = set()
+    for code in re.findall(r"\b(\d{5})\b", f"{plz} {ort}"):
+        if code in PLZ:
+            kandidaten.add(PLZ[code])
+    for name in sorted(ORTE, key=len, reverse=True):
+        if re.search(r"(?<![a-zäöüß])" + re.escape(name) + r"(?![a-zäöüß])", o):
+            kandidaten.add(name)
+    if not kandidaten and WESERPARK_RX.search(text):
+        kandidaten.add("weserpark")
+    if kandidaten & BREMER_TEILE:
+        kandidaten -= {"bremen", "mitte"}
+    if not kandidaten:
+        if REGIONAL.search(o):
+            return None, "Außendienst/Region/Homeoffice – Fahrt variiert"
+        return None, "unbekannt"
+    best = min(kandidaten, key=lambda k: ORTE[k][1])
+    km, minuten = ORTE[best]
+    sprit = km * 2 * ARBEITSTAGE * SPRIT_L_100KM / 100 * SPRIT_EUR_L
+    zusatz = " (+ weitere Orte)" if REGIONAL.search(o) else ""
+    return minuten, f"{best.title()}: ~{km} km · ~{minuten} Min · ~{sprit:.0f} €/Monat Sprit{zusatz}"
+
+
+# --------------------------------------------------------------------------- #
 # Quelle 1: StepStone
 # --------------------------------------------------------------------------- #
 def _stepstone_state(text: str) -> dict:
@@ -120,11 +203,11 @@ def _stepstone_state(text: str) -> dict:
         return {}
 
 
-def stepstone(begriff: str, radius: int, seiten: int) -> list[dict]:
+def stepstone(begriff: str, radius: int, seiten: int, ort: str = "bremen") -> list[dict]:
     slug = urllib.parse.quote(begriff.lower().replace(" ", "-"))
     jobs = []
     for page in range(1, seiten + 1):
-        url = f"https://www.stepstone.de/jobs/{slug}/in-bremen?radius={radius}&page={page}"
+        url = f"https://www.stepstone.de/jobs/{slug}/in-{ort}?radius={radius}&page={page}"
         r = get(url)
         if not r:
             if page == 1:
@@ -153,6 +236,7 @@ def stepstone(begriff: str, radius: int, seiten: int) -> list[dict]:
                 "titel": clean(it.get("title")),
                 "firma": clean(it.get("companyName")),
                 "ort": clean(it.get("location")),
+                "plz": str(it.get("postCode") or ""),
                 "gehalt": gehalt,
                 "homeoffice": {"1": "teilweise", "2": "teilweise", "3": "ja"}.get(str(it.get("workFromHome")), ""),
                 "datum": (it.get("datePosted") or "")[:10],
@@ -181,6 +265,12 @@ def stepstone_detail(job: dict) -> None:
         et = d.get("employmentType")
         job["anstellung"] = ", ".join(et) if isinstance(et, list) else (et or "")
         job["bewerben_bis"] = (d.get("validThrough") or "")[:10]
+        locs = d.get("jobLocation") or []
+        locs = locs if isinstance(locs, list) else [locs]
+        plz = [str((l.get("address") or {}).get("postalCode") or "") for l in locs if isinstance(l, dict)]
+        orte = [str((l.get("address") or {}).get("addressLocality") or "") for l in locs if isinstance(l, dict)]
+        job["plz"] = " ".join(x for x in [job.get("plz", "")] + plz if x)
+        job["ort_detail"] = ", ".join(x for x in orte if x)
         return
 
 
@@ -193,6 +283,7 @@ def stepstone_detail(job: dict) -> None:
 # („5 Tage / 30 Std. verhandeln“).
 # --------------------------------------------------------------------------- #
 WESERPARK = re.compile(r"weser ?-?park|hans-bredow-str", re.I)
+WESERPARK_RX = WESERPARK
 
 
 def _weserpark_detail(job: dict) -> None:
@@ -230,6 +321,62 @@ def weserpark() -> list[dict]:
     with ThreadPoolExecutor(6) as ex:
         list(ex.map(_weserpark_detail, jobs))
     return jobs
+
+
+# Weserpark-Shops für Initiativbewerbungen (auch ohne ausgeschriebene Stelle)
+PASSUNG = [  # (Kategorie-/Namensmuster, Passung 0–100, Begründung)
+    (r"telekom|vodafone|o2|freenet|mobilcom|mobile point|myswooop|media ?markt", 80, "Verkauf mit Provision/Zielprämie üblich – passt zu Vertrieb"),
+    (r"\bswb\b", 75, "Energie-Kundenberatung (Vertrieb, Verträge)"),
+    (r"dertour|tui|urlaub & ferien|reise", 70, "Reiseverkauf/Beratung, eher Büro-Rhythmus"),
+    (r"vorwerk|opti-wohnwelt|hornbach|elektronik", 65, "Beratungsverkauf mit höherem Warenwert"),
+    (r"optik|fielmann|krass|eyes|apollo|juwelier|pandora|douglas|parfüm|pieper", 60, "Beratungsverkauf"),
+    (r"mode|fashion|schuhe|lederwaren|schmuck|accessoires|haushalt|dekoration|bücher|schreibwaren|kindermode|"
+     r"gesundheit|beauty|pflege|tabak", 55, "Einzelhandel Verkauf/Kundenberatung"),
+    (r"lebensmittel|frischwaren|edeka|aldi", 40, "Lebensmittelhandel – oft Früh/Spät/Samstag"),
+    (r"gastronomie|food|lounge|freizeit", 25, "Gastro/Freizeit – passt wenig, viel Wochenende"),
+]
+NICHT_INITIATIV = re.compile(r"polizei|sparkasse \(sb|zahnarzt|augenärzte|csl plasma|fotofix|service punkt|"
+                             r"aba logistics|stichweh|fahrschule|tankstelle|hbi\b|studioline|nail|nails|barber|"
+                             r"frisör|super cut|styleboxx|furkans|mish mish|ellen", re.I)
+
+
+def weserpark_initiativ() -> list[dict]:
+    base = "https://www.weserpark.de"
+    r = get(base + "/shopping/shops-von-a-z")
+    if not r:
+        fehler_melden("Weserpark-Shopverzeichnis nicht erreichbar (shops-von-a-z)")
+        return []
+    rows = []
+    for block in r.text.split('<div class="shopgrid-item">')[1:]:
+        n = re.search(r'<span class="name d-none">(.*?)</span>', block, re.S)
+        k = re.search(r'<span class="kats d-none([^"]*)"', block)
+        if not n:
+            continue
+        name, kat = clean(n.group(1)), (k.group(1).strip() if k else "")
+        if NICHT_INITIATIV.search(name):
+            continue
+        link = re.search(r'href="(/shops/[^"]+)"', block)
+        fit, grund = 45, "Einzelhandel"
+        for rx, f, g in PASSUNG:
+            if re.search(rx, f"{name} {kat}", re.I):
+                fit, grund = f, g
+                break
+        q = urllib.parse.quote_plus(f"{name} Karriere Jobs Bremen Weserpark")
+        rows.append({
+            "quelle": "Weserpark-Shops", "id": "wpi-" + re.sub(r"\W+", "", name.lower()),
+            "titel": "Initiativbewerbung (Verkauf/Beratung)", "firma": name, "ort": "Bremen, Weserpark",
+            "gehalt": "", "homeoffice": "", "datum": "", "anstellung": kat, "bewerben_bis": "",
+            "link": base + link.group(1) if link else f"https://www.google.com/search?q={q}",
+            "text": "", "suchbegriff": "Weserpark initiativ", "kategorie": "Weserpark initiativ",
+            "samstag": "im Center üblich → 5 Tage/30 Std. ohne Samstag verhandeln",
+            "pro": f"{grund} · Weserpark – kurzer Weg", "contra": "Keine Stelle ausgeschrieben → im Laden/Bewerbung direkt fragen",
+            "score": fit, "status": "", "weserpark": True,
+        })
+    rows = [r for r in rows if r["score"] >= 25]
+    minuten, txt = fahrt("weserpark")
+    for r_ in rows:
+        r_["minuten"], r_["fahrt"] = minuten, txt
+    return sorted(rows, key=lambda x: -x["score"])
 
 
 def arbeitnow(seiten: int = 5) -> list[dict]:
@@ -352,11 +499,15 @@ def bewerten(job: dict) -> None:
             cons.append("Eher niedriges Gehalt")
     if SENIOR.search(job["titel"]):
         cons.append("Führungs-/Senior-Rolle")
-    ort = job["ort"].lower()
-    if "bremen" in ort:
-        pros.append("In Bremen")
-    elif not any(r in ort for r in REGION):
-        cons.append("Ort außerhalb Kernregion")
+    job["minuten"], job["fahrt"] = fahrt(f"{job['ort']} {job.get('ort_detail', '')}", job.get("plz", ""), f"{job['titel']} {job['text'][:3000]}")
+    m = job["minuten"]
+    if m is not None:
+        if m <= 15:
+            pros.append(f"Kurzer Weg (~{m} Min)")
+        elif m > MAX_MINUTEN:
+            cons.append(f"Weit weg (~{m} Min)")
+        elif m > 25:
+            cons.append(f"Fahrt ~{m} Min")
     job["samstag"] = samstag(f"{job['titel']} {job['firma']} {job['text']}", f"{job['titel']} {job['firma']}")
     if re.search(r"\bausbildung|azubi|duales studium|werkstudent|praktik", job["titel"], re.I):
         cons.append("Ausbildung/Studentenjob")
@@ -370,6 +521,7 @@ def bewerten(job: dict) -> None:
     score += 8 if job["samstag"].startswith("nein") else 0
     score -= 15 if job["samstag"].startswith("prüfen") and not job["weserpark"] else 0
     score -= 20 if "Selbstständig/Provision ohne Fix" in cons else 0
+    score += 6 if m is not None and m <= 15 else 0
     job["pro"] = " · ".join(pros) or "–"
     job["contra"] = " · ".join(cons) or "–"
     job["score"] = max(0, min(100, score))
@@ -379,7 +531,7 @@ def bewerten(job: dict) -> None:
 # Export
 # --------------------------------------------------------------------------- #
 SPALTEN = [
-    ("score", "Score", 8), ("kategorie", "Bereich", 12), ("titel", "Stelle", 48), ("firma", "Firma", 30), ("ort", "Ort", 24),
+    ("score", "Score", 8), ("kategorie", "Bereich", 12), ("titel", "Stelle", 48), ("firma", "Firma", 30), ("ort", "Ort", 24), ("fahrt", "Fahrt ab Mahndorf", 30), ("minuten", "Min.", 6),
     ("gehalt", "Gehalt", 26), ("samstag", "Samstagsarbeit?", 30), ("pro", "Pro", 55),
     ("contra", "Contra", 45), ("homeoffice", "Homeoffice", 11), ("anstellung", "Anstellung", 14),
     ("datum", "Online seit", 11), ("bewerben_bis", "Läuft bis", 11), ("quelle", "Quelle", 10),
@@ -387,8 +539,9 @@ SPALTEN = [
 ]
 
 
-def export(jobs: list[dict], aussortiert: list[dict], stamp: str, wp: list[dict] | None = None) -> tuple[Path, Path]:
-    wp = wp or []
+def export(jobs: list[dict], aussortiert: list[dict], stamp: str, wp: list[dict] | None = None,
+           initiativ: list[dict] | None = None, zuweit: list[dict] | None = None) -> tuple[Path, Path]:
+    wp, initiativ, zuweit = wp or [], initiativ or [], zuweit or []
     from openpyxl import Workbook
     from openpyxl.styles import Alignment, Font, PatternFill
     from openpyxl.utils import get_column_letter
@@ -400,7 +553,7 @@ def export(jobs: list[dict], aussortiert: list[dict], stamp: str, wp: list[dict]
     with csv_p.open("w", newline="", encoding="utf-8-sig") as f:
         w = csv.writer(f, delimiter=";")
         w.writerow([h for _, h, _ in SPALTEN])
-        for j in jobs + wp:
+        for j in jobs + wp + initiativ:
             w.writerow([j.get(k, "") for k, _, _ in SPALTEN])
 
     wb = Workbook()
@@ -414,10 +567,10 @@ def export(jobs: list[dict], aussortiert: list[dict], stamp: str, wp: list[dict]
         for j in rows:
             ws.append([j.get(k, "") for k, _, _ in SPALTEN])
             r = ws.max_row
-            link = ws.cell(r, len(SPALTEN) - 1)
+            link = ws.cell(r, [k for k, _, _ in SPALTEN].index("link") + 1)
             if link.value:
                 link.hyperlink, link.style = link.value, "Hyperlink"
-            sa = ws.cell(r, 7)
+            sa = ws.cell(r, [k for k, _, _ in SPALTEN].index("samstag") + 1)
             if str(sa.value).startswith("prüfen"):
                 sa.fill = PatternFill("solid", fgColor="FFD966")
             elif str(sa.value).startswith("nein"):
@@ -435,14 +588,18 @@ def export(jobs: list[dict], aussortiert: list[dict], stamp: str, wp: list[dict]
     ws = wb.active
     ws.title = "Jobs ohne Samstag"
     sheet(ws, jobs)
-    sheet(wb.create_sheet("Weserpark"), wp)
+    sheet(wb.create_sheet("Weserpark (Stellen)"), wp)
+    sheet(wb.create_sheet("Weserpark (initiativ)"), initiativ)
+    sheet(wb.create_sheet(f"Zu weit (>{MAX_MINUTEN} Min)"), zuweit)
     sheet(wb.create_sheet("Aussortiert (Samstag)"), aussortiert)
     info = wb.create_sheet("Info")
     for row in [
         ["Erstellt", dt.datetime.now().strftime("%d.%m.%Y %H:%M")],
-        ["Treffer (ohne Samstag)", len(jobs)], ["Aussortiert wegen Samstag", len(aussortiert)],
+        ["Treffer (ohne Samstag, ≤ Fahrzeit)", len(jobs)], ["Aussortiert wegen Samstag", len(aussortiert)],
+        ["Fahrt", f"ab Bremen-Mahndorf, max. {MAX_MINUTEN} Min (darüber → Blatt „Zu weit“, {len(zuweit)} Stellen). Sprit: {SPRIT_L_100KM} l/100 km × {SPRIT_EUR_L} €/l × {ARBEITSTAGE} Tage hin+zurück. Werte sind Schätzungen."],
+        ["Weserpark initiativ", f"{len(initiativ)} Geschäfte ohne ausgeschriebene Stelle – Passung als Score (Mobilfunk/Elektronik am besten). Link = Shopseite oder Google-Suche nach Karriereseite."],
         ["Weserpark", f"{len(wp)} Stellen – Samstag dort üblich, aber bewusst drin: bei der Bewerbung 5 Tage/Woche, 30 Std. ohne Samstag verhandeln."],
-        ["Score", "40 Basis, +4 je Pro, −8 je Contra, +10 Fix+Provision, +8 Mo–Fr bestätigt, −15 Samstag prüfen (Laden/Filiale), −20 reine Provision"],
+        ["Score", "40 Basis, +4 je Pro, −8 je Contra, +10 Fix+Provision, +6 Fahrt ≤15 Min, +8 Mo–Fr bestätigt, −15 Samstag prüfen (Laden/Filiale), −20 reine Provision"],
         ["Samstag-Check", "grün = Mo–Fr/Wochenende frei bestätigt · gelb = prüfen (Laden/Filiale/Callcenter) · ohne Farbe = nicht erwähnt. Samstag ausdrücklich genannt → Blatt „Aussortiert“."],
         ["Gehalt", "„geschätzt“ = StepStone-Schätzung, nicht Angabe des Arbeitgebers."],
     ]:
@@ -457,6 +614,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description="Jobsuche Bremen ohne Samstagsarbeit → Excel + CSV")
     ap.add_argument("-b", "--begriffe", nargs="+", default=STANDARD_BEGRIFFE)
     ap.add_argument("--radius", type=int, default=30, help="Umkreis km um Bremen (Standard 30)")
+    ap.add_argument("--max-minuten", type=int, default=MAX_MINUTEN, help="max. Fahrzeit ab Mahndorf (Standard 30)")
     ap.add_argument("--seiten", type=int, default=2, help="Ergebnisseiten je Begriff (à 25)")
     ap.add_argument("--schnell", action="store_true", help="1 Seite, keine Detailseiten")
     ap.add_argument("--out", type=Path, help="Ausgabeordner (Standard: projekte/jobsuche-bremen/ergebnisse)")
@@ -472,7 +630,9 @@ def main() -> None:
     print(f"🔎 Suche {len(a.begriffe)} Begriffe, Radius {a.radius} km …", flush=True)
     with ThreadPoolExecutor(4) as ex:
         res = list(ex.map(lambda b: stepstone(b, a.radius, a.seiten), a.begriffe))
+        res += list(ex.map(lambda b: stepstone(b, 10, 1, "verden-aller"), a.begriffe))  # Ostseite bis Verden
         res.append(stepstone("weser-park", 10, 2))  # StepStone-Anzeigen mit Weserpark-Bezug
+        ini = ex.submit(weserpark_initiativ)
         an = ex.submit(arbeitnow)
         wpf = ex.submit(weserpark)
         alle = [j for r in res for j in r] + an.result() + wpf.result()
@@ -504,6 +664,14 @@ def main() -> None:
 
     wp = sorted([j for j in jobs if j["weserpark"]], key=lambda j: -j["score"])
     rest = [j for j in jobs if not j["weserpark"]]
+    for j in rest:
+        if j["fahrt"] == "unbekannt":
+            j["fahrt"] = "Ort nicht in Tabelle → vermutlich > 30 Min (bei Bedarf ORTE ergänzen)"
+            j["minuten"] = 99
+    zuweit = sorted([j for j in rest if j["minuten"] is not None and j["minuten"] > a.max_minuten], key=lambda j: j["minuten"])
+    rest = [j for j in rest if j not in zuweit]
+    vorhanden = {re.sub(r"\W+", "", j["firma"].lower())[:8] for j in wp}
+    initiativ = [r for r in ini.result() if re.sub(r"\W+", "", r["firma"].lower())[:8] not in vorhanden]
     ok = [j for j in rest if a.mit_samstag or not j["samstag"].startswith("ja")]
     raus = [j for j in rest if j not in ok]
     ok.sort(key=lambda j: -j["score"])
@@ -514,9 +682,10 @@ def main() -> None:
     if jobs and all(not j["text"].strip() for j in jobs):
         fehler_melden("Kein Anzeigentext geladen – Samstags-Check/Pro/Contra wertlos")
     stamp = dt.date.today().isoformat()
-    xls, csvp = export(ok, raus, stamp, wp)
+    xls, csvp = export(ok, raus, stamp, wp, initiativ, zuweit)
     fehler_schreiben()
-    print(f"✅ {len(ok)} Jobs ohne Samstag, {len(wp)} Weserpark, {len(raus)} aussortiert  ({time.time() - t0:.0f}s)")
+    print(f"✅ {len(ok)} Jobs (≤{a.max_minuten} Min, ohne Samstag), {len(wp)} Weserpark-Stellen, "
+          f"{len(initiativ)} Weserpark-Shops initiativ, {len(zuweit)} zu weit, {len(raus)} Samstag aussortiert  ({time.time() - t0:.0f}s)")
     print(f"   Excel: {xls}\n   CSV:   {csvp}")
 
 

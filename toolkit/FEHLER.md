@@ -21,6 +21,9 @@ Neue Einträge **oben** in die Tabelle. Das Jobsuche-Tool trägt Probleme automa
 | Datum | Tool | Problem | Status | Lösung / Workaround |
 |---|---|---|---|---|
 <!-- AUTO-EINTRAEGE -->
+| 2026-11-18 | jobsuche-bremen | Fahrzeiten sind Schätzwerte aus einer Tabelle, keine Routenplanung; Anzeigen nur mit „Bremen“ ohne PLZ → pauschal 20 Min (Bremen-Mitte) | bekannt/hinnehmen | Werte in `ORTE` anpassen; vor Bewerbung Adresse in Maps prüfen |
+| 2026-11-18 | jobsuche-bremen | StepStone-Suche `in-achim` liefert Jobs um Hannover | behoben | stattdessen `in-verden-aller` |
+| 2026-11-18 | jobsuche-bremen | Initiativ-Passung der Weserpark-Shops nur nach Kategorie geschätzt | bekannt/hinnehmen | Zeile in `PASSUNG` anpassen |
 | 2026-11-18 | jobsuche-bremen | HUMANIC-Job im Weserpark steht doppelt (Firma direkt + über meinestadt.de) | bekannt/hinnehmen | – |
 | 2026-11-18 | jobsuche-bremen | „selbständig arbeiten“ wurde als „Selbstständig/Provision ohne Fix“ gewertet (18 Fälle bleiben, prüfen) | behoben | Regex auf „auf selbstständiger Basis“, „Handelsvertreter“ usw. eingeschränkt |
 | 2026-11-18 | jobsuche-bremen | Teilzeit wurde als Contra gewertet, Nutzer will aber ~30 Std. | behoben | Teilzeit = Pro, nur Minijob/Aushilfe = Contra |

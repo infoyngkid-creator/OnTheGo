@@ -5,7 +5,7 @@ Vor der Nutzung eines Tools: **dessen `BRIEFING.md` lesen** und **`FEHLER.md` pr
 
 | Tool | Zweck | Aufruf | Briefing |
 |---|---|---|---|
-| `jobsuche-bremen/` | Jobs rund um Bremen ohne Samstagsarbeit → Excel + CSV mit Pro/Contra/Score | `python3 toolkit/jobsuche-bremen/jobsuche.py` | [BRIEFING](jobsuche-bremen/BRIEFING.md) |
+| `jobsuche-bremen/` | Jobs ≤30 Min ab Mahndorf ohne Samstagsarbeit + Weserpark (Stellen & initiativ) → Excel + CSV mit Pro/Contra/Score/Fahrt/Sprit | `python3 toolkit/jobsuche-bremen/jobsuche.py` | [BRIEFING](jobsuche-bremen/BRIEFING.md) |
 
 ## Regeln für neue Tools
 1. Eigener Ordner `toolkit/<name>/` mit Skript + `BRIEFING.md` (Vorlage: das Jobsuche-Briefing).
